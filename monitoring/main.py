@@ -21,5 +21,5 @@ def update_prices() -> None:
                 db_update_price(session, good_id, price['result'])
 
 
-scheduler.add_job(update_prices, 'cron', minute='*')
+scheduler.add_job(update_prices, 'cron', hour='*')
 scheduler.start()
