@@ -19,7 +19,7 @@ def shop_getter_factory(link) -> dict:
     getters = {
         'mvideo': Mvideo,
         'dns-shop': Dns,
-        'citilink': Mvideo,
+        'citilink': Citilink,
     }
 
     return getters.get(shop, Getter)().get_price(link)
@@ -29,7 +29,6 @@ class Getter:
     user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'
 
     options = webdriver.ChromeOptions()
-    options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--no-sandbox')
     options.add_argument('--start-maximized')
     options.add_argument('--headless=chrome')
@@ -72,4 +71,21 @@ class Dns(Getter):
 
 
 class Citilink(Getter):
-    pass
+    price_css_selector = 'span.e1j9birj0.e106ikdt0.app-catalog-1f8xctp.e1gjr6xo0'
+
+    def get_price(self, link: str) -> dict:
+        driver = webdriver.Remote(command_executor=f'{SELENIUM_IP}:{SELENIUM_PORT}', options=self.options)
+        driver.implicitly_wait(5)
+
+        try:
+            driver.get(link)
+
+            price = driver.find_element(By.CSS_SELECTOR, self.price_css_selector).text
+
+            return {'error_code': 0, 'result': float(price.replace(' ', ''))}
+        except NoSuchElementException:
+            return {'error_code': 1, 'status_code': 400, 'result': 'A searched element has not been found.'}
+        except WebDriverException:
+            return {'error_code': 2, 'status_code': 500, 'result': 'The link is not valid or the connection is lost.'}
+        finally:
+            driver.quit()
